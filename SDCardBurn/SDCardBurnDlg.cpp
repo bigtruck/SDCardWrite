@@ -28,15 +28,15 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// 对话框数据
+	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-// 实现
+														// 实现
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -70,7 +70,7 @@ void CSDCardBurnDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO1, m_CBDisk);
 	DDX_Control(pDX, IDC_EDIT_PATH, m_CEFilePath);
 	DDX_Control(pDX, IDC_BUTTON_SELFILE, m_BuSelFile);
-	DDX_Control(pDX, IDC_BUTTON_BURN , m_BuBurn);
+	DDX_Control(pDX, IDC_BUTTON_BURN, m_BuBurn);
 	DDX_Control(pDX, IDC_PROGRESS, m_CProgress);
 	DDX_Control(pDX, IDC_STATIC_STATE, m_CSState);
 }
@@ -117,14 +117,18 @@ BOOL CSDCardBurnDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
-	//m_TFunWriteData = AfxBeginThread((AFX_THREADPROC)WriteData, this, THREAD_PRIORITY_NORMAL, 1024 * 1024 * 3, CREATE_SUSPENDED, NULL);
-	//m_TFunMainRun = AfxBeginThread((AFX_THREADPROC)MainRun, this, THREAD_PRIORITY_NORMAL, 0, CREATE_SUSPENDED, NULL);
-	m_CEFilePath.SetWindowTextW(L"E:\\ACC3.BIN");
+									// TODO: 在此添加额外的初始化代码
 
+									//窗口标题
+	this->SetWindowTextW(L"SD卡烧写工具V2.1");
+
+	WCHAR	curDire[MAX_PATH];
+	CString strPath;
+	GetCurrentDirectory(MAX_PATH, curDire);
+	strPath.Format(L"%s\\ACC3.bin", curDire);
+	m_CEFilePath.SetWindowTextW(strPath);
 	//pThWrite = (WriteSDCardThread *)AfxBeginThread(RUNTIME_CLASS(WriteSDCardThread), 0, 1024 * 1024 * 1, CREATE_SUSPENDED);
 	ScanAllDisk();
-
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -180,7 +184,7 @@ HCURSOR CSDCardBurnDlg::OnQueryDragIcon()
 UINT CSDCardBurnDlg::MainRun(LPVOID lParam)
 {
 
-	
+
 	return 0;
 }
 
@@ -193,7 +197,7 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 	INT		verDiff;
 	DWORD	outSize;
 	UINT	rdLen;
-	ULONGLONG	fsSize,dealSize;
+	ULONGLONG	fsSize, dealSize;
 	LONG	sdPoint;
 	UINT	progValue;
 	CString staticStr;
@@ -214,7 +218,7 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 	bRtn = DeviceIoControl(m_HdSDCard, IOCTL_DISK_DELETE_DRIVE_LAYOUT, NULL, 0, NULL, 0, &outSize, NULL);
 	if (bRtn == FALSE)
 	{
-		AfxMessageBox(L"删除引导信息失败");
+		myDlg->ViewLastError(L"删除引导信息失败:");
 		goto __LAB_ERROR;
 	}
 	//清除扇区0
@@ -223,11 +227,11 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 	bRtn = WriteFile(m_HdSDCard, rdBuffer, 512, &outSize, NULL);
 	if (bRtn == FALSE)
 	{
-		AfxMessageBox(L"清除扇区0失败");
+		myDlg->ViewLastError(L"清除扇区0失败:");
 		goto __LAB_ERROR;
 	}
 	//设置SD卡的偏移点
-	sdPoint = 1024*1024*1;
+	sdPoint = 1024 * 1024 * 1;
 	//源文件长度
 	fsSize = m_CFSrcFile.GetLength();
 	dealSize = 0;
@@ -242,7 +246,7 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 			bRtn = WriteFile(m_HdSDCard, rdBuffer, rdLen, &outSize, NULL);
 			if (bRtn == FALSE)
 			{
-				AfxMessageBox(L"写入SD卡失败",MB_OK | MB_ICONERROR);
+				myDlg->ViewLastError(L"写入SD卡失败:");
 				goto __LAB_ERROR;
 			}
 			//从SD卡读出
@@ -250,14 +254,14 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 			bRtn = ReadFile(m_HdSDCard, verBuffer, rdLen, &outSize, NULL);
 			if (bRtn == FALSE)
 			{
-				AfxMessageBox(L"从SD卡读出数据失败", MB_OK | MB_ICONERROR);
+				myDlg->ViewLastError(L"从SD卡读出数据失败:");
 				goto __LAB_ERROR;
 			}
 			//校验
 			verDiff = memcmp(rdBuffer, verBuffer, rdLen);
 			if (verDiff != 0)
 			{
-				AfxMessageBox(L"检验数据出错", MB_OK | MB_ICONERROR);
+				AfxMessageBox(L"校验数据出错", MB_OK | MB_ICONERROR);
 				goto __LAB_ERROR;
 			}
 			sdPoint += rdLen;
@@ -265,7 +269,7 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 
 			progValue = (INT)(((float)dealSize / (float)fsSize) * 100);
 			progress->SetPos(progValue);
-			staticStr.Format(L"%u%%",progValue);
+			staticStr.Format(L"%u%%", progValue);
 			myStatic->SetWindowTextW(staticStr);
 		}
 		//Sleep(10);
@@ -274,11 +278,10 @@ UINT CSDCardBurnDlg::WriteData(LPVOID lParam)
 	progress->SetPos(100);
 	AfxMessageBox(L"写数据成功", MB_OK | MB_ICONMASK);
 
+__LAB_ERROR:
 	myEditPath->EnableWindow(true);
 	myBuBurn->EnableWindow(true);
 	myBuFilePath->EnableWindow(true);
-
-__LAB_ERROR:
 	CloseHandle(m_HdSDCard);
 	m_CFSrcFile.Close();
 	AfxEndThread(0);
@@ -290,7 +293,7 @@ __LAB_ERROR:
 void CSDCardBurnDlg::OnBnClickedButtonSelfile()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	
+
 	CString filePath;
 	BOOL bRes;
 	WCHAR	curDire[MAX_PATH];
@@ -339,7 +342,7 @@ void CSDCardBurnDlg::OnBnClickedButtonBurn()
 	bRtn = m_CFSrcFile.Open(str, CFile::modeRead | CFile::typeBinary | CFile::shareDenyRead);
 	if (!bRtn)
 	{
-		MessageBox(L"打开源文件失败",L"错误",MB_OK | MB_ICONERROR);
+		MessageBox(L"打开源文件失败", L"错误", MB_OK | MB_ICONERROR);
 		return;
 	}
 
@@ -399,6 +402,27 @@ void CSDCardBurnDlg::ScanAllDisk(void)
 	{
 		m_CBDisk.SetCurSel(0);
 	}
+}
+
+void CSDCardBurnDlg::ViewLastError(LPTSTR lpMsg)
+{
+
+	LPVOID lpMsgBuf;
+	DWORD dw = GetLastError();//获取错误代码
+
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf,
+		0, NULL);
+
+	CString strErr;
+	strErr.Format(L"%s%s", lpMsg, lpMsgBuf);
+	MessageBox(strErr, L"错误", MB_OK | MB_ICONERROR);
+	LocalFree(lpMsgBuf);
 }
 
 
