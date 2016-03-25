@@ -125,7 +125,10 @@ BOOL CSDCardBurnDlg::OnInitDialog()
 	WCHAR	curDire[MAX_PATH];
 	CString strPath;
 	GetCurrentDirectory(MAX_PATH, curDire);
-	strPath.Format(L"%s\\ACC3.bin", curDire);
+	strPath.Format(L"%s", curDire);
+	strPath = strPath.Left(strPath.ReverseFind(L'\\'));
+	strPath += L"\\ACC3.bin";
+	//strPath.Format(L"%s\\ACC3.bin", curDire);
 	m_CEFilePath.SetWindowTextW(strPath);
 	//pThWrite = (WriteSDCardThread *)AfxBeginThread(RUNTIME_CLASS(WriteSDCardThread), 0, 1024 * 1024 * 1, CREATE_SUSPENDED);
 	ScanAllDisk();
@@ -348,6 +351,12 @@ void CSDCardBurnDlg::OnBnClickedButtonBurn()
 
 	//´´½¨´ÅÅÌ¾ä±ú
 	//m_CBDisk.GetWindowTextW(str);
+	if (m_CBDisk.GetCount() == 0)
+	{
+		m_CFSrcFile.Close();
+		MessageBox(L"ÇëÑ¡Ôñ´ÅÅÌ", L"¾¯¸æ", MB_OK | MB_ICONWARNING);
+		return;
+	}
 	m_CBDisk.GetLBText(m_CBDisk.GetCurSel(), str);
 	if (str.IsEmpty())
 	{
@@ -367,7 +376,7 @@ void CSDCardBurnDlg::OnBnClickedButtonBurn()
 	//m_TimerID = SetTimer(0, 10, 0);
 	m_CSState.SetWindowTextW(L"0%");
 	m_CProgress.SetPos(0);
-	m_TFunWriteData = AfxBeginThread((AFX_THREADPROC)WriteData, this, THREAD_PRIORITY_NORMAL, 1024 * 1024 * 3, CREATE_SUSPENDED, NULL);
+	m_TFunWriteData = AfxBeginThread((AFX_THREADPROC)WriteData, this, THREAD_PRIORITY_NORMAL, 1024 * 1024 * 1, CREATE_SUSPENDED, NULL);
 	m_TFunWriteData->ResumeThread();
 }
 

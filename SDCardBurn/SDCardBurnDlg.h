@@ -56,6 +56,7 @@ public:
 	CStatic m_CSState;
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void ScanAllDisk(void);
+	void ViewLastError(LPTSTR lpMsg);
 	afx_msg void OnBnClickedButtonSelfile();
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonBurn();
